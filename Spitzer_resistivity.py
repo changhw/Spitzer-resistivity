@@ -16,6 +16,7 @@
 
 import numpy as np
 import math
+import matplotlib.pyplot as plt
 
 # some constants
 pi = np.pi
@@ -49,7 +50,7 @@ P0_norm = B0_norm ** 2 / mu0
 T_norm = 1 / e / mu0 / Ne
 T_norm2 = 1 / kB / mu0 / Ne
 
-OUT_PUT_HARTMANN_PRANDTL_ONLY = True # output all parameters if set it to False
+OUT_PUT_HARTMANN_PRANDTL_ONLY = False # output all parameters if set it to False
 
 if __name__ == '__main__':
 
@@ -147,17 +148,18 @@ if __name__ == '__main__':
         print(f'*eta_spz_norm_Jorek = {"{:.02e}".format(eta_spz_norm_Jorek)}') # = 1.0/S_lundquist
 
     # calculate the kinematic viscosities based on N Vivenzi et al 2022 J. Phys.: Conf. Ser. 2397 012010
-    visco_para = 34.6 * pi**1.5 * epsilon0**2 / (e**4 * mi ** 0.5) * (e * Ti) ** 2.5 / (Zeff**4 * clog * gamma**0.5 * Ne)
-    visco_perp = 1.0 / (8 * pi**1.5) * mi**0.5 * e**2 / epsilon0**2 * gamma**0.5 * Ne * clog / (e*Ti)**0.5 / B0_axis**2
+    gamma_viscous = 1
+    visco_para = 34.6 * pi**1.5 * epsilon0**2 / (e**4 * mi ** 0.5) * (e * Ti) ** 2.5 / (Zeff**4 * clog * gamma_viscous**0.5 * Ne)
+    visco_perp = 1.0 / (8 * pi**1.5) * mi**0.5 * e**2 / epsilon0**2 * gamma_viscous**0.5 * Ne * clog / (e*Ti)**0.5 / B0_axis**2
     visco_gyro = 1.25 / e * (e * Ti) / Zeff / B0_axis
-    aT = 20 #cm
-    aB = 80 #cm
-    visco_ITG  = 1.08e-4 * gamma**0.5 * (1 * Te) * (1 * Ti)**0.5 / (Zeff * aT**0.75 * aB**0.25 * B0_axis**2)
+    aT = 1 #m
+    aB = 1.7 #m
+    visco_ITG  = 1.08e-4 * gamma_viscous**0.5 * (1 * Te) * (1 * Ti)**0.5 / (Zeff * aT**0.75 * aB**0.25 * B0_axis**2)
     gamma_e = 1
     gamma_i = 3
-    Lc      = 1.4 # m
+    Lc      = 1.7 # m
     visco_Finn = ((gamma_e * Zeff * e * Te + gamma_i * e * Ti) / mi)**0.5 * Lc * (1e-3)**2
-    viscosity_in_Jorek = (visco_perp * 1000 + visco_gyro / 1000 + visco_ITG * 10 + visco_Finn) / 4
+    viscosity_in_Jorek = visco_perp + visco_ITG + visco_Finn
 
 
     # χ⊥ perpendicular heat conductivity, typically 1m2/s; lower in pedestal by one order of magnitude
@@ -198,3 +200,169 @@ if __name__ == '__main__':
 
     print(f'*magnetic Prandtl number                   = {"{:.02e}".format(magnetic_Prandtl)}')
     print(f'*Hartmann number (L = {L0_norm} m)                 = {"{:.02e}".format(Hartmann)}')
+
+
+    #####################################################
+    #
+    #      parameter ranges of flux pumping
+    #
+    #####################################################
+
+
+    # Set global font properties using rcParams
+    plt.rcParams.update({
+        'axes.formatter.limits': (-3, 3),
+        'axes.formatter.useoffset': True,  # Use scientific notation
+        'font.size': 18,                # Global font size
+        'lines.linewidth': 3.0,         # Global line width
+        'axes.linewidth': 3.0,           # Set line width for both x and y axes
+        # 'font.family': 'serif',         # Use serif fonts, which includes Times New Roman
+        # 'font.serif': ['Times New Roman'],  # Specifically set Times New Roman
+        # 'font.weight': 'bold'           # Font weight for all text elements
+        'legend.fontsize': 18,          # Font size for the legend
+        # 'axes.labelsize': 14,           # Font size for axis labels
+        'axes.titlesize': 18,           # Font size for title
+        # 'xtick.labelsize': 12,          # Font size for x-tick labels
+        # 'ytick.labelsize': 12,          # Font size for y-tick labels
+    })
+
+    magnetic_Prandtl_Finn = mu0 * visco_Finn / eta_spz_in_Jorek
+    Hartmann_Finn = np.sqrt(mu0/(eta_spz_in_Jorek*visco_Finn)) * L0_norm * VA_norm * B0_axis
+    print(f'*magnetic Prandtl number Finn              = {"{:.02e}".format(magnetic_Prandtl_Finn)}')
+    print(f'*Hartmann number Finn (L = {L0_norm} m)            = {"{:.02e}".format(Hartmann_Finn)}')
+
+
+    Ne_min = 1e19
+    Ne_max = 1e21   # m^{-3}
+    Te_min = 500
+    Te_max = 50000  # ev
+
+    # Ne_min = 0.1* Ne
+    # Ne_max = 10 * Ne
+    # Te_min = 0.1* Te
+    # Te_max = 10 * Te
+
+    Te_1d = np.logspace(np.log10(Te_min), np.log10(Te_max), 1000)
+    Ne_1d = np.logspace(np.log10(Ne_min), np.log10(Ne_max), 1000)
+
+    Te_2d, Ne_2d = np.meshgrid(Te_1d, Ne_1d)
+    Ti_2d = Te_2d
+
+    H_c = 3.e7
+    beta_Nc = 2.0
+    
+    beta_N_2d = Te_2d / Te * Ne_2d / Ne * 3.0
+
+    clog_2d=np.log(4.0*pi*(epsilon0*e*Te_2d)**1.5/e**3/(Ne_2d)**(0.5))
+
+    eta_2d = 1.65e-9/((Te_2d/1.e3)**1.5)*clog_2d*Zeff
+    visco_Finn_2d = ((gamma_e * Zeff * e * Te_2d + gamma_i * e * Ti_2d) / mi)**0.5 * Lc * (1e-3)**2
+    visco_ITG_2d  = 1.08e-4 * gamma_viscous**0.5 * (1 * Te_2d) * (1 * Ti_2d)**0.5 / (Zeff * aT**0.75 * aB**0.25 * B0_axis**2)
+
+    Hartmann_Finn_2d = np.sqrt(mu0/( eta_2d * visco_Finn_2d )) * L0_norm * B0_axis * B0_norm / (mu0 * Ne_2d * mi) ** 0.5
+
+    Hartmann_ITG_2d  = np.sqrt(mu0/( eta_2d * visco_ITG_2d )) * L0_norm * B0_axis * B0_norm / (mu0 * Ne_2d * mi) ** 0.5
+
+    Hartmann_total_2d = np.sqrt(mu0/(eta_2d * (visco_Finn_2d + visco_ITG_2d) )) * L0_norm * B0_axis * B0_norm / (mu0 * Ne_2d * mi) ** 0.5
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    mask = (
+    (beta_N_2d > beta_Nc) &
+    (Hartmann_ITG_2d > H_c) &
+    (Hartmann_Finn_2d > H_c) & 
+    (Hartmann_total_2d > H_c)
+    )
+
+    # filled contour
+    cf = ax.contourf(Te_2d/1e3, Ne_2d/1e20, np.log10(Hartmann_total_2d), 20, cmap='bwr')
+
+    # Overlay hatched region where mask == 1
+    cs_hatch = ax.contourf(
+        Te_2d / 1e3,
+        Ne_2d / 1e20,
+        mask,
+        levels=[0.5, 1.5],
+        colors='none',          # <-- no color fill
+        hatches=['..'],        # <-- shaded lines
+    )
+
+    # 2. Update the color for modern Matplotlib
+    # In newer versions, we iterate directly over the ContourSet
+    for path_collection in cs_hatch.get_paths():
+        # We apply the edge color to the segments within the path
+        cs_hatch.set_edgecolor('black')
+        cs_hatch.set_linewidth(0)
+
+    # ITG critical contour
+    cs_itg = ax.contour(
+        Te_2d/1e3, Ne_2d/1e20, Hartmann_ITG_2d,
+        levels=[H_c],
+        colors='black',
+        linestyles='-',
+        linewidths=2
+    )
+
+    # Finn critical contour
+    cs_finn = ax.contour(
+        Te_2d/1e3, Ne_2d/1e20, Hartmann_Finn_2d,
+        levels=[H_c],
+        colors='black',
+        linestyles='--',
+        linewidths=2,
+    )
+
+    # total critical contour
+    cs_tot = ax.contour(
+        Te_2d/1e3, Ne_2d/1e20, Hartmann_total_2d,
+        levels=[H_c],
+        colors='black',
+        linestyles='-.',
+        linewidths=2
+    )
+
+    # critical beta
+    cs_beta = ax.contour(
+        Te_2d/1e3, Ne_2d/1e20, beta_N_2d,
+        levels=[beta_Nc],
+        colors='black',
+        linestyles=':',
+        linewidths=2
+    )
+
+    sc_base = ax.scatter(Te/1e3, Ne/1e20, marker = 'o', s = 200, edgecolor = 'black', facecolor='none', linewidth = 2)
+
+    # After all your contour calls:
+    lines = [cs_itg.legend_elements()[0][0], 
+            cs_finn.legend_elements()[0][0], 
+            cs_tot.legend_elements()[0][0],
+            cs_beta.legend_elements()[0][0],
+            cs_hatch.legend_elements()[0][0],
+            sc_base]
+
+    labels = [r'$H_\text{ITG}=H_c$', r'$H_\text{Finn}=H_c$', r'$H_\text{ITG+Finn}=H_c$', r'$\beta_p=\beta_{p,c}$', 'Flux pumping', 'Base case']
+
+    leg = ax.legend(lines, labels, loc='lower left')
+    # Make the legend draggable
+    leg.set_draggable(True)
+    leg.get_frame().set_alpha(1)
+
+    # log scales for axes
+    plt.xscale('log')
+    plt.yscale('log')
+
+    # labels
+    plt.xlabel(r'$T_e$ [keV]')
+    plt.ylabel(r'$N_e$ [10$^{20}$ m$^{-3}$]')
+
+    # colorbar
+    cbar = plt.colorbar(cf)
+    cbar.set_ticks(np.arange(7., 8.5, 0.5))   # integer ticks from 0 to 10
+
+    
+    cbar.set_label(r'$\log_{10}{(H_\text{ITG+Finn})}$')
+
+    plt.title('estimated $N_e-T_e$ window of flux pumping')
+
+    plt.tight_layout()
+    plt.show()
