@@ -59,8 +59,8 @@ if __name__ == '__main__':
     # clog_ee_Huba = 23.5 - np.log(Ne ** 0.5 * Te ** -1.25) - (1.e-5 + (np.log(Te) - 2)**2 / 16.0) ** 0.5 # from Huba-2016-NRL Page 34
     eta_spz=0.51 * (8*pi*e**2*me**0.5)/((4*pi*epsilon0)**2*3*(2*pi)**0.5*(e*Te)**1.5)*clog*Zeff
     eta_spz_vivenzi = 0.06 / pi**1.5 * me**0.5 * e**2 / epsilon0**2 * Zeff * clog / (e*Te)**1.5 # based on N Vivenzi et al 2022 J. Phys.: Conf. Ser. 2397 012010
-    lnA = 14.9 - 0.5*math.log( Ne/1.e20 ) + math.log( Te/1.e3 )
-    eta_spz_in_Jorek=1.65e-9/((Te/1.e3)**1.5)*lnA*Zeff
+    clog_jorek = 14.9 - 0.5*math.log( Ne/1.e20 ) + math.log( Te/1.e3 )
+    eta_spz_in_Jorek=1.65e-9/((Te/1.e3)**1.5)*clog_jorek*Zeff
 
     # calculate the ion-electron energy transfer rate
     # from jorek, model 711
@@ -138,7 +138,7 @@ if __name__ == '__main__':
         print(f'clog                = {"{:.02e}".format(clog)}')
         # print(f'clog_Huba           = {"{:.02e}".format(clog_Huba)}')
         # print(f'clog_ee_Huba        = {"{:.02e}".format(clog_ee_Huba)}')
-        print(f'lnA (in Jorek)      = {"{:.02e}".format(lnA)}')
+        print(f'clog_jorek          = {"{:.02e}".format(clog_jorek)}')
         print('--------------------------------')
         print(f'eta_spz             = {"{:.02e}".format(eta_spz)} Ohm m')
         print(f'eta_spz_vivenzi     = {"{:.02e}".format(eta_spz_vivenzi)} Ohm m')
@@ -172,8 +172,8 @@ if __name__ == '__main__':
 
     # At high temperature, SH is typically overestimating the parallel conductivity (heat flux limit, see literature)
     # e.g., reducing by a factor ≈ 30, compared to SH seemed to make sense for tearing modes in TEXTOR and ASDEX Upgrade (PhD M. Hoelzl)
-    ZK_e_par_SpitzerHaerm = 5.5789e+0 * mi /(me*lnA) * Te_keV**(2.5e+0) * (gamma-1.e0) * sqrt_mu0_over_rho0        # Same as the JORKE code
-    ZK_i_par_SpitzerHaerm = 5.8410e+2 * math.sqrt(central_mass/2.e+0)/lnA * Ti_keV**(2.5e+0) * (gamma-1.e0) * sqrt_mu0_over_rho0  # Same as the JORKE code
+    ZK_e_par_SpitzerHaerm = 5.5789e+0 * mi /(me*clog_jorek) * Te_keV**(2.5e+0) * (gamma-1.e0) * sqrt_mu0_over_rho0        # Same as the JORKE code
+    ZK_i_par_SpitzerHaerm = 5.8410e+2 * math.sqrt(central_mass/2.e+0)/clog_jorek * Ti_keV**(2.5e+0) * (gamma-1.e0) * sqrt_mu0_over_rho0  # Same as the JORKE code
 
     if not OUT_PUT_HARTMANN_PRANDTL_ONLY:
         print('--------------------------------')
