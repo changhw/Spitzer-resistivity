@@ -29,10 +29,11 @@ gamma = 5.0 / 3.0
 # plasma parameters
 B0_axis = 2.57       # T
 central_mass = 1.0   # hydrogen
-Zeff = central_mass
-Mie = 1836 * Zeff    # mass ratio
+Zeff = 1.0
+Mie = 1836 * central_mass    # mass ratio
 me = 9.109384e-31    # kg
-mi = me * Mie        # kg
+mp = 1.672622e-27    # kg
+mi = mp * central_mass        # kg
 Ne = 1.01 * 1.0e+20  # m-3
 Te = 5033.16         # eV (for base case = 4.92e+04 * 1.023e-01)
 Ti = 4573.632        # eV (for base case = 4.92e+04 * 9.296e-02)
@@ -65,9 +66,9 @@ if __name__ == '__main__':
     # calculate the ion-electron energy transfer rate
     # from jorek, model 711
     lambda_e_bg = 23. - np.log((Ne * 1.e-6) ** 0.5 * Te ** (-1.5)) # Assuming bg_charge is 1!
-    nu_e_bg = 1.8e-19 * (1.e6 * me * mi * central_mass) ** 0.5 \
+    nu_e_bg = 1.8e-19 * (1.e6 * me * mi) ** 0.5 \
               * (1.e14 * Ne / 1.e20) * lambda_e_bg   \
-              / (1.e3 * (me * Ti / T_norm +Te / T_norm * mi * central_mass) \
+              / (1.e3 * (me * Ti / T_norm +Te / T_norm * mi) \
               / (e * mu0 * Ne)) ** 1.5
     dTi_e_norm = nu_e_bg / VA_norm * (Te - Ti) / T_norm * Ne / 1e20
     dTi_e = nu_e_bg * (Te - Ti) * e * Ne
@@ -330,7 +331,16 @@ if __name__ == '__main__':
         linewidths=2
     )
 
+    
     sc_base = ax.scatter(Te/1e3, Ne/1e20, marker = 'o', s = 200, edgecolor = 'black', facecolor='none', linewidth = 2)
+
+    Te_FP = np.array([5900, 5800])
+    Ne_FP = np.array([7.7e19, 8.1e19])
+    sc_FP = ax.scatter(Te_FP/1e3, Ne_FP/1e20, marker = 'o', s = 200, edgecolor = 'black', facecolor='none', linewidth = 2)
+
+    Te_ST = np.array([4800, 5780])
+    Ne_ST = np.array([6.2e19, 7.6e19])
+    sc_ST = ax.scatter(Te_ST/1e3, Ne_ST/1e20, marker = 'v', s = 200, edgecolor = 'black', facecolor='none', linewidth = 2)
 
     # After all your contour calls:
     lines = [cs_itg.legend_elements()[0][0], 
@@ -338,9 +348,9 @@ if __name__ == '__main__':
             cs_tot.legend_elements()[0][0],
             cs_beta.legend_elements()[0][0],
             cs_hatch.legend_elements()[0][0],
-            sc_base]
+            sc_base, sc_FP, sc_ST]
 
-    labels = [r'$H_\text{ITG}=H_c$', r'$H_\text{Finn}=H_c$', r'$H_\text{ITG+Finn}=H_c$', r'$\beta_p=\beta_{p,c}$', 'Flux pumping', 'Base case']
+    labels = [r'$H_\text{ITG}=H_c$', r'$H_\text{Finn}=H_c$', r'$H_\text{ITG+Finn}=H_c$', r'$\beta_p=\beta_{p,c}$', 'Flux pumping', 'Base case', 'new (FP)', 'new (ST)']
 
     leg = ax.legend(lines, labels, loc='lower left')
     # Make the legend draggable
