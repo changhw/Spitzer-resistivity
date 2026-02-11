@@ -11,6 +11,11 @@ m_p = 1.67262192369e-24      # g
 erg_per_eV = 1.602176634e-12 # erg
 
 # =========================
+# Physical constants (SI)
+# =========================
+M_PROTON_SI = 1.67262192369e-27  # kg
+
+# =========================
 # Braginskii ion viscosities
 # =========================
 def braginskii_ion_viscosity(
@@ -23,9 +28,8 @@ def braginskii_ion_viscosity(
     ):
     """
     Returns:
-        tau_i  [s]
-        omega_ci [1/s]
-        eta0, eta1, eta2, eta3, eta4  [g / (cm s)]
+        Dictionary with viscosity coefficients in CGS, SI units,
+        and kinematic viscosities
     """
 
     # Ion mass
@@ -49,8 +53,51 @@ def braginskii_ion_viscosity(
     eta2 = 6.0 * nkT / (5.0 * omega_ci**2 * tau_i)
     eta3 = nkT / (2.0 * omega_ci)
     eta4 = nkT / omega_ci
+    
+    # Convert viscosities from CGS [g/(cm·s)] to SI [kg/(m·s)]
+    # Conversion factor: 1 g/(cm·s) = 0.1 kg/(m·s)
+    CGS_TO_SI = 0.1
+    eta0_SI = eta0 * CGS_TO_SI
+    eta1_SI = eta1 * CGS_TO_SI
+    eta2_SI = eta2 * CGS_TO_SI
+    eta3_SI = eta3 * CGS_TO_SI
+    eta4_SI = eta4 * CGS_TO_SI
+    
+    # Calculate mass density for kinematic viscosity
+    # ρ = n * m_i
+    # Convert n from cm^-3 to m^-3: multiply by 10^6
+    n_SI = n * 1e6  # m^-3
+    m_i_SI = mu * M_PROTON_SI  # kg
+    rho_SI = n_SI * m_i_SI  # kg/m^3
+    
+    # Calculate kinematic viscosities ν = η / ρ [m^2/s]
+    nu0 = eta0_SI / rho_SI
+    nu1 = eta1_SI / rho_SI
+    nu2 = eta2_SI / rho_SI
+    nu3 = eta3_SI / rho_SI
+    nu4 = eta4_SI / rho_SI
 
-    return tau_i, omega_ci, eta0, eta1, eta2, eta3, eta4
+    return {
+        'tau_i': tau_i,
+        'omega_ci': omega_ci,
+        'omega_ci_tau_i': omega_ci * tau_i,
+        'eta0': eta0,
+        'eta1': eta1,
+        'eta2': eta2,
+        'eta3': eta3,
+        'eta4': eta4,
+        'eta0_SI': eta0_SI,
+        'eta1_SI': eta1_SI,
+        'eta2_SI': eta2_SI,
+        'eta3_SI': eta3_SI,
+        'eta4_SI': eta4_SI,
+        'nu0': nu0,
+        'nu1': nu1,
+        'nu2': nu2,
+        'nu3': nu3,
+        'nu4': nu4,
+        'rho_SI': rho_SI
+    }
 
 
 # =========================
@@ -68,13 +115,43 @@ if __name__ == "__main__":
 
     results = braginskii_ion_viscosity(n, Ti, B, lnLambda, Z, mu)
 
-    names = ["tau_i [s]",
-             "omega_ci [1/s]",
-             "eta0 [g/(cm s)]",
-             "eta1 [g/(cm s)]",
-             "eta2 [g/(cm s)]",
-             "eta3 [g/(cm s)]",
-             "eta4 [g/(cm s)]"]
-
-    for name, val in zip(names, results):
-        print(f"{name:15s} = {val:.3e}")
+    print("="*60)
+    print("BRAGINSKII ION VISCOSITY COEFFICIENTS")
+    print("="*60)
+    print(f"\nInput Parameters:")
+    print(f"  Temperature:       T = {Ti:.2e} eV")
+    print(f"  Density:           n = {n:.2e} cm⁻³")
+    print(f"  Magnetic field:    B = {B:.2e} G")
+    print(f"  Ion charge:        Z = {Z}")
+    print(f"  Ion mass number:   μ = {mu}")
+    print(f"  Coulomb logarithm: Λ = {lnLambda}")
+    
+    print(f"\nDerived Quantities:")
+    print(f"  Collision time:    τᵢ = {results['tau_i']:.3e} s")
+    print(f"  Cyclotron freq:    ωcᵢ = {results['omega_ci']:.3e} rad/s")
+    print(f"  Hall parameter:    ωcᵢτᵢ = {results['omega_ci_tau_i']:.3e}")
+    
+    print(f"\nViscosity Coefficients (CGS) [g/(cm·s)]:")
+    print(f"  η₀ = {results['eta0']:.3e}  (parallel)")
+    print(f"  η₁ = {results['eta1']:.3e}  (perpendicular 1)")
+    print(f"  η₂ = {results['eta2']:.3e}  (perpendicular 2)")
+    print(f"  η₃ = {results['eta3']:.3e}  (gyroviscous 1)")
+    print(f"  η₄ = {results['eta4']:.3e}  (gyroviscous 2)")
+    
+    print(f"\nViscosity Coefficients (SI) [kg/(m·s)]:")
+    print(f"  η₀ = {results['eta0_SI']:.3e}  (parallel)")
+    print(f"  η₁ = {results['eta1_SI']:.3e}  (perpendicular 1)")
+    print(f"  η₂ = {results['eta2_SI']:.3e}  (perpendicular 2)")
+    print(f"  η₃ = {results['eta3_SI']:.3e}  (gyroviscous 1)")
+    print(f"  η₄ = {results['eta4_SI']:.3e}  (gyroviscous 2)")
+    
+    print(f"\nMass Density:")
+    print(f"  ρ = {results['rho_SI']:.3e} kg/m³")
+    
+    print(f"\nKinematic Viscosity Coefficients [m²/s]:")
+    print(f"  ν₀ = {results['nu0']:.3e}  (parallel)")
+    print(f"  ν₁ = {results['nu1']:.3e}  (perpendicular 1)")
+    print(f"  ν₂ = {results['nu2']:.3e}  (perpendicular 2)")
+    print(f"  ν₃ = {results['nu3']:.3e}  (gyroviscous 1)")
+    print(f"  ν₄ = {results['nu4']:.3e}  (gyroviscous 2)")
+    print("="*60)

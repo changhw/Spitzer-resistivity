@@ -16,6 +16,11 @@ K_BOLTZMANN = 1.381e-16  # erg/K
 EV_TO_ERG = 1.602e-12  # erg/eV
 C_LIGHT = 2.998e10  # cm/s
 
+# Physical constants (SI units)
+M_PROTON_SI = 1.673e-27  # kg
+K_BOLTZMANN_SI = 1.381e-23  # J/K
+EV_TO_JOULE = 1.602e-19  # J/eV
+
 def calculate_collision_time(T_eV, n, Z=1, A=1, ln_Lambda=15):
     """
     Calculate ion collision time τ_i
@@ -129,12 +134,46 @@ def calculate_braginskii_viscosities(T_eV, n, B, Z=1, A=1, ln_Lambda=15):
     # η_4^i = nkT_i / ω_ci
     eta_4 = (n * T_erg) / omega_ci
     
+    # Convert viscosities from CGS [g/(cm·s)] to SI [kg/(m·s)]
+    # Conversion factor: 1 g/(cm·s) = 0.1 kg/(m·s)
+    CGS_TO_SI = 0.1
+    eta_0_SI = eta_0 * CGS_TO_SI
+    eta_1_SI = eta_1 * CGS_TO_SI
+    eta_2_SI = eta_2 * CGS_TO_SI
+    eta_3_SI = eta_3 * CGS_TO_SI
+    eta_4_SI = eta_4 * CGS_TO_SI
+    
+    # Calculate mass density for kinematic viscosity
+    # ρ = n * m_i
+    # Convert n from cm^-3 to m^-3: multiply by 10^6
+    n_SI = n * 1e6  # m^-3
+    m_i_SI = A * M_PROTON_SI  # kg
+    rho_SI = n_SI * m_i_SI  # kg/m^3
+    
+    # Calculate kinematic viscosities ν = η / ρ [m^2/s]
+    nu_0 = eta_0_SI / rho_SI
+    nu_1 = eta_1_SI / rho_SI
+    nu_2 = eta_2_SI / rho_SI
+    nu_3 = eta_3_SI / rho_SI
+    nu_4 = eta_4_SI / rho_SI
+    
     return {
         'eta_0': eta_0,
         'eta_1': eta_1,
         'eta_2': eta_2,
         'eta_3': eta_3,
         'eta_4': eta_4,
+        'eta_0_SI': eta_0_SI,
+        'eta_1_SI': eta_1_SI,
+        'eta_2_SI': eta_2_SI,
+        'eta_3_SI': eta_3_SI,
+        'eta_4_SI': eta_4_SI,
+        'nu_0': nu_0,
+        'nu_1': nu_1,
+        'nu_2': nu_2,
+        'nu_3': nu_3,
+        'nu_4': nu_4,
+        'rho_SI': rho_SI,
         'tau_i': tau_i,
         'omega_ci': omega_ci,
         'omega_ci_tau_i': omega_ci * tau_i
@@ -165,6 +204,23 @@ def print_results(results, T_eV, n, B, Z=1, A=1):
     print(f"  η₂ = {results['eta_2']:.3e}  (perpendicular 2)")
     print(f"  η₃ = {results['eta_3']:.3e}  (gyroviscous 1)")
     print(f"  η₄ = {results['eta_4']:.3e}  (gyroviscous 2)")
+    
+    print(f"\nViscosity Coefficients (SI Units) [kg/(m·s)]:")
+    print(f"  η₀ = {results['eta_0_SI']:.3e}  (parallel)")
+    print(f"  η₁ = {results['eta_1_SI']:.3e}  (perpendicular 1)")
+    print(f"  η₂ = {results['eta_2_SI']:.3e}  (perpendicular 2)")
+    print(f"  η₃ = {results['eta_3_SI']:.3e}  (gyroviscous 1)")
+    print(f"  η₄ = {results['eta_4_SI']:.3e}  (gyroviscous 2)")
+    
+    print(f"\nMass Density:")
+    print(f"  ρ = {results['rho_SI']:.3e} kg/m³")
+    
+    print(f"\nKinematic Viscosity Coefficients [m²/s]:")
+    print(f"  ν₀ = {results['nu_0']:.3e}  (parallel)")
+    print(f"  ν₁ = {results['nu_1']:.3e}  (perpendicular 1)")
+    print(f"  ν₂ = {results['nu_2']:.3e}  (perpendicular 2)")
+    print(f"  ν₃ = {results['nu_3']:.3e}  (gyroviscous 1)")
+    print(f"  ν₄ = {results['nu_4']:.3e}  (gyroviscous 2)")
     print("="*60 + "\n")
 
 # Example usage
